@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion : '2010-09-09'
+Transform:
+  - AWS::Serverless-2016-10-31
+
+Description: Lambda CloudFormation Lab
+Resources:
+  MyLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: my-upb-function
+      Handler: lambda.handler
+      Runtime: python3.6
+      CodeUri: package/
+      Role: !GetAtt MyLambdaRole.Arn
+      
+  GetUser: 
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: getUser
+      Handler: user.getUser
+      Runtime: python3.6
+      CodeUri: package/
+       
+        
+  PutUser: 
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: putUser
+      Handler: user.putUser
+      Runtime: python3.6
+      CodeUri: package/
+      
+  #MyTable:
+  #  Type: AWS::DynamoDB::Table
+  #  Properties:
+  #    PrimaryKey: 
+  #      Name: pk
+  #      Type: String
+  #      ProvisionedThroughput:
+  #        ReadCapacityUnits: S 
+  #        WriteCapacityUnits: S 
+  
+  MyTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: users-table
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+        
