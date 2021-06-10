@@ -3,35 +3,91 @@ Transform:
 - AWS::Serverless-2016-10-31
 Description: Lambda CloudFormation Lab
 Resources:
-  MyLambda:
-    Type: AWS::Serverless::Function
+  MyLambdaRole:
+    Type: AWS::IAM::Role
     Properties:
-      FunctionName: my-upb-function
-      Handler: lambda.handler
-      Runtime: python3.6
-      CodeUri: s3://upb-cloudformation-lab/2d8912b9e83e117a36b760967d8819c3
-      Role:
-        Fn::GetAtt:
-        - MyLambdaRole
-        - Arn
+      RoleName: rpp-ip-cluster-lambda-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName: my-lambda-policy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: arn:aws:logs:::*
+          - Effect: Allow
+            Action:
+            - dynamodb:GetItem
+            Resource: arn:aws:dynamodb:::table/users-table-2
   GetUser:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: getUser
       Handler: user.getUser
       Runtime: python3.6
-      CodeUri: s3://upb-cloudformation-lab/2d8912b9e83e117a36b760967d8819c3
+      CodeUri: s3://upb-cloudformation-lab/2d4b097a17c4e3eaea3bd391d93a133a
+      Role:
+        Fn::GetAtt:
+        - MyLambdaRole
+        - Arn
+      Environment:
+        Variables:
+          USERS_TABLE:
+            Ref: UsersTable
+      Events:
+        GetUsers:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: MyAPI
+            Path: /user/{userId}
+            Method: GET
   PutUser:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: putUser
       Handler: user.putUser
       Runtime: python3.6
-      CodeUri: s3://upb-cloudformation-lab/2d8912b9e83e117a36b760967d8819c3
-  MyTable:
+      CodeUri: s3://upb-cloudformation-lab/2d4b097a17c4e3eaea3bd391d93a133a
+      Environment:
+        Variables:
+          USERS_TABLE:
+            Ref: UsersTable
+      Events:
+        GetUsers:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: MyAPI
+            Path: /user/{userId}
+            Method: PUT
+  MyAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: users-api
+      StageName: prod
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: s3://upb-cloudformation-lab/08f20df40e6e06a7e3b0a4a4f07ff6db
+  UsersTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: users-table
+      TableName: users-table-2
       ProvisionedThroughput:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5

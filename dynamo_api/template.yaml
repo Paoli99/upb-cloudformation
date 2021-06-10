@@ -4,46 +4,99 @@ Transform:
 
 Description: Lambda CloudFormation Lab
 Resources:
-  MyLambda:
-    Type: AWS::Serverless::Function
+  MyLambdaRole:
+    Type: AWS::IAM::Role
     Properties:
-      FunctionName: my-upb-function
-      Handler: lambda.handler
-      Runtime: python3.6
-      CodeUri: package/
-      Role: !GetAtt MyLambdaRole.Arn
-      
-  GetUser: 
+      RoleName: rpp-ip-cluster-lambda-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: my-lambda-policy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: arn:aws:logs:::*
+          - Effect: Allow
+            Action:
+            - dynamodb:GetItem
+            Resource: arn:aws:dynamodb:::table/users-table-2
+
+  GetUser:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: getUser
       Handler: user.getUser
       Runtime: python3.6
       CodeUri: package/
-       
-        
-  PutUser: 
+      Role: !GetAtt MyLambdaRole.Arn
+      Environment:
+        Variables:
+          USERS_TABLE: !Ref UsersTable
+      Events:
+        GetUsers:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyAPI
+            Path: "/user/{userId}"
+            Method: GET
+      
+
+  PutUser:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: putUser
       Handler: user.putUser
       Runtime: python3.6
       CodeUri: package/
-      
-  #MyTable:
-  #  Type: AWS::DynamoDB::Table
-  #  Properties:
-  #    PrimaryKey: 
-  #      Name: pk
-  #      Type: String
-  #      ProvisionedThroughput:
-  #        ReadCapacityUnits: S 
-  #        WriteCapacityUnits: S 
+      Environment:
+        Variables:
+          USERS_TABLE: !Ref UsersTable
+      Events:
+        GetUsers:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyAPI
+            Path: "/user/{userId}"
+            Method: PUT
   
-  MyTable:
+  MyAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: users-api
+      StageName: prod
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: swagger.yaml
+
+  # MyTable:
+  #   Type: AWS::Serverless::SimpleTable
+  #   Properties:
+  #     PrimaryKey:
+  #       Name: pk
+  #       Type: String
+  #     ProvisionedThroughput:
+  #       ReadCapacityUnits: 5
+  #       WriteCapacityUnits: 5
+
+  UsersTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: users-table
+      TableName: users-table-2
       ProvisionedThroughput:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
@@ -57,4 +110,3 @@ Resources:
           AttributeType: S
         - AttributeName: sk
           AttributeType: S
-        
