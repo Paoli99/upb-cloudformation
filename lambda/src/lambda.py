@@ -1,6 +1,5 @@
 import json
 import boto3 
-import 
 
 def lambda_handler(event, context):
     print(json.dumps({'running':True}))
