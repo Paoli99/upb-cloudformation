@@ -3,46 +3,17 @@ Transform:
 - AWS::Serverless-2016-10-31
 Description: Lambda CloudFormation Lab
 Resources:
-  MyLambdaRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: rpp-ip-cluster-lambda-role
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-            - lambda.amazonaws.com
-          Action:
-          - sts:AssumeRole
-      Path: /
-      Policies:
-      - PolicyName: my-lambda-policy
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - Effect: Allow
-            Action:
-            - logs:CreateLogGroup
-            - logs:CreateLogStream
-            - logs:PutLogEvents
-            Resource: arn:aws:logs:::*
-          - Effect: Allow
-            Action:
-            - dynamodb:GetItem
-            Resource: arn:aws:dynamodb:::table/users-table-2
   GetUser:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: getUser
       Handler: user.getUser
       Runtime: python3.6
-      CodeUri: s3://upb-cloudformation-lab/2d4b097a17c4e3eaea3bd391d93a133a
-      Role:
-        Fn::GetAtt:
-        - MyLambdaRole
-        - Arn
+      CodeUri: s3://upb-cloudformation-lab/48c6ccb744ad05a1a67acd49ec374816
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName:
+            Ref: UsersTable
       Environment:
         Variables:
           USERS_TABLE:
@@ -61,7 +32,11 @@ Resources:
       FunctionName: putUser
       Handler: user.putUser
       Runtime: python3.6
-      CodeUri: s3://upb-cloudformation-lab/2d4b097a17c4e3eaea3bd391d93a133a
+      CodeUri: s3://upb-cloudformation-lab/48c6ccb744ad05a1a67acd49ec374816
+      Policies:
+      - DynamoDBWritePolicy:
+          TableName:
+            Ref: UsersTable
       Environment:
         Variables:
           USERS_TABLE:
@@ -83,7 +58,7 @@ Resources:
         Fn::Transform:
           Name: AWS::Include
           Parameters:
-            Location: s3://upb-cloudformation-lab/08f20df40e6e06a7e3b0a4a4f07ff6db
+            Location: s3://upb-cloudformation-lab/e648e643bac4a60d9923ab3a612775e8
   UsersTable:
     Type: AWS::DynamoDB::Table
     Properties:

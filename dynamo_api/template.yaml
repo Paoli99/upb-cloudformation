@@ -1,38 +1,39 @@
+
 AWSTemplateFormatVersion : '2010-09-09'
 Transform:
   - AWS::Serverless-2016-10-31
 
 Description: Lambda CloudFormation Lab
 Resources:
-  MyLambdaRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: rpp-ip-cluster-lambda-role
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-            - lambda.amazonaws.com
-          Action:
-          - sts:AssumeRole
-      Path: "/"
-      Policies:
-      - PolicyName: my-lambda-policy
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - Effect: Allow
-            Action:
-            - logs:CreateLogGroup
-            - logs:CreateLogStream
-            - logs:PutLogEvents
-            Resource: arn:aws:logs:::*
-          - Effect: Allow
-            Action:
-            - dynamodb:GetItem
-            Resource: arn:aws:dynamodb:::table/users-table-2
+  # MyLambdaRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     RoleName: rpp-ip-cluster-lambda-role
+  #     AssumeRolePolicyDocument:
+  #       Version: '2012-10-17'
+  #       Statement:
+  #       - Effect: Allow
+  #         Principal:
+  #           Service:
+  #           - lambda.amazonaws.com
+  #         Action:
+  #         - sts:AssumeRole
+  #     Path: "/"
+  #     Policies:
+  #     - PolicyName: my-lambda-policy
+  #       PolicyDocument:
+  #         Version: '2012-10-17'
+  #         Statement:
+  #         - Effect: Allow
+  #           Action:
+  #           - logs:CreateLogGroup
+  #           - logs:CreateLogStream
+  #           - logs:PutLogEvents
+  #           Resource: arn:aws:logs:*:*:*
+  #         - Effect: Allow
+  #           Action:
+  #           - dynamodb:GetItem
+  #           Resource: arn:aws:dynamodb:*:*:table/users-table-2
 
   GetUser:
     Type: AWS::Serverless::Function
@@ -41,7 +42,10 @@ Resources:
       Handler: user.getUser
       Runtime: python3.6
       CodeUri: package/
-      Role: !GetAtt MyLambdaRole.Arn
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref UsersTable
+      # Role: !GetAtt MyLambdaRole.Arn
       Environment:
         Variables:
           USERS_TABLE: !Ref UsersTable
@@ -61,6 +65,10 @@ Resources:
       Handler: user.putUser
       Runtime: python3.6
       CodeUri: package/
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: !Ref UsersTable
+      # Role: !GetAtt MyLambdaRole.Arn
       Environment:
         Variables:
           USERS_TABLE: !Ref UsersTable
