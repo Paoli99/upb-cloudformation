@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform:
+- AWS::Serverless-2016-10-31
+Description: Lambda CloudFormation Lab
+Resources:
+  GetUser:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: getUser
+      Handler: user.getUser
+      Runtime: python3.6
+      CodeUri: s3://upb-cloudformation-lab/48c6ccb744ad05a1a67acd49ec374816
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName:
+            Ref: UsersTable
+      Environment:
+        Variables:
+          USERS_TABLE:
+            Ref: UsersTable
+      Events:
+        GetUsers:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: MyAPI
+            Path: /user/{userId}
+            Method: GET
+  PutUser:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: putUser
+      Handler: user.putUser
+      Runtime: python3.6
+      CodeUri: s3://upb-cloudformation-lab/48c6ccb744ad05a1a67acd49ec374816
+      Policies:
+      - DynamoDBWritePolicy:
+          TableName:
+            Ref: UsersTable
+      Environment:
+        Variables:
+          USERS_TABLE:
+            Ref: UsersTable
+      Events:
+        GetUsers:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: MyAPI
+            Path: /user/{userId}
+            Method: PUT
+  MyAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: users-api
+      StageName: prod
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: s3://upb-cloudformation-lab/e648e643bac4a60d9923ab3a612775e8
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: users-table-2
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      KeySchema:
+      - AttributeName: pk
+        KeyType: HASH
+      - AttributeName: sk
+        KeyType: RANGE
+      AttributeDefinitions:
+      - AttributeName: pk
+        AttributeType: S
+      - AttributeName: sk
+        AttributeType: S
